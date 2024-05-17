@@ -1,18 +1,22 @@
 'use client';
 
+import Image from 'next/image';
+import { useState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/lib/formatters';
-import { useState } from 'react';
-import { addProduct } from '../../_actions/products';
-import { useFormState, useFormStatus } from 'react-dom';
+import { Product } from '@prisma/client';
 
-function ProductForm() {
-  const [priceInCents, setPriceInCents] = useState<number>();
+import { addProduct, updateProduct } from '../../_actions/products';
 
-  const [error, dispatch] = useFormState(addProduct, {});
+function ProductForm({ product }: { product?: Product | null }) {
+  const [priceInCents, setPriceInCents] = useState<number | undefined>(product?.priceInCents);
+
+  const [error, dispatch] = useFormState(!product ? addProduct : updateProduct.bind(null, product.id), {});
 
   return (
     <form
@@ -26,6 +30,7 @@ function ProductForm() {
           id='name'
           name='name'
           required
+          defaultValue={product?.name ?? ''}
         />
         {error.name && <div className='text-destructive'>{error.name}</div>}
       </div>
@@ -51,6 +56,7 @@ function ProductForm() {
           id='description'
           name='description'
           required
+          defaultValue={product?.description ?? ''}
         />
         {error.description && <div className='text-destructive'>{error.description}</div>}
       </div>
@@ -61,8 +67,9 @@ function ProductForm() {
           type='file'
           id='file'
           name='file'
-          required
+          required={!product}
         />
+        {product && <div className='text-muted-foreground'>{product.filePath}</div>}
         {error.file && <div className='text-destructive'>{error.file}</div>}
       </div>
 
@@ -72,8 +79,17 @@ function ProductForm() {
           type='file'
           id='image'
           name='image'
-          required
+          required={!product}
         />
+        {product && (
+          <Image
+            src={product.imagePath}
+            height='400'
+            width='400'
+            alt='Product Image'
+          />
+        )}
+
         {error.image && <div className='text-destructive'>{error.image}</div>}
       </div>
 
