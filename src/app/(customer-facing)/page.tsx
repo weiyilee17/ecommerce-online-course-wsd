@@ -7,23 +7,31 @@ import { Button } from '@/components/ui/button';
 import db from '@/db/db';
 import { Product } from '@prisma/client';
 import ProductsPage from './products/page';
+import { cache } from '@/lib/cache';
 
-async function getMostPopularProducts() {
-  await wait(1000);
-  return db.product.findMany({
-    where: {
-      isAvailableForPurchase: true,
-    },
-    orderBy: {
-      orders: {
-        _count: 'desc',
+const getMostPopularProducts = cache(
+  () => {
+    // await wait(1000);
+    return db.product.findMany({
+      where: {
+        isAvailableForPurchase: true,
       },
-    },
-    take: 6,
-  });
-}
-async function getNewestProducts() {
-  await wait(2000);
+      orderBy: {
+        orders: {
+          _count: 'desc',
+        },
+      },
+      take: 6,
+    });
+  },
+  ['/', 'getMostPopularProducts'],
+  {
+    revalidate: 60 * 60 * 24,
+  }
+);
+
+const getNewestProducts = cache(() => {
+  // await wait(2000);
   return db.product.findMany({
     where: {
       isAvailableForPurchase: true,
@@ -31,7 +39,7 @@ async function getNewestProducts() {
     orderBy: { createdAt: 'desc' },
     take: 6,
   });
-}
+}, ['/', 'getNewestProducts']);
 
 function wait(duration: number) {
   return new Promise((resolve) => setTimeout(resolve, duration));

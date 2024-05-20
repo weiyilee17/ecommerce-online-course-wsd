@@ -1,9 +1,10 @@
-import ProductCard, { ProductCardSkeleton } from '@/components/product-card';
-import db from '@/db/db';
 import { Suspense } from 'react';
 
-async function getProducts() {
-  wait(2000);
+import ProductCard, { ProductCardSkeleton } from '@/components/product-card';
+import db from '@/db/db';
+import { cache } from '@/lib/cache';
+
+const getProducts = cache(() => {
   return db.product.findMany({
     where: {
       isAvailableForPurchase: true,
@@ -12,11 +13,7 @@ async function getProducts() {
       name: 'asc',
     },
   });
-}
-
-function wait(duration: number) {
-  return new Promise((resolve) => setTimeout(resolve, duration));
-}
+}, ['/products', 'getProducts']);
 
 function ProductsPage() {
   return (
