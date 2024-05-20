@@ -110,21 +110,17 @@ async function ProductsTable() {
                     <Link href={`/admin/products/${id}/edit`}>Edit</Link>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
-                    <ActiveToggleDropdownItem
-                      id={id}
-                      isAvailableForPurchase={isAvailableForPurchase}
-                    />
-                  </DropdownMenuItem>
+                  <ActiveToggleDropdownItem
+                    id={id}
+                    isAvailableForPurchase={isAvailableForPurchase}
+                  />
 
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem asChild>
-                    <DeleteDropdownItem
-                      id={id}
-                      disabled={_count.orders > 0}
-                    />
-                  </DropdownMenuItem>
+                  <DeleteDropdownItem
+                    id={id}
+                    disabled={_count.orders > 0}
+                  />
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
