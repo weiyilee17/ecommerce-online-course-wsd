@@ -38,3 +38,5 @@ next-env.d.ts
 # file and images
 /products
 /public/products
+
+/prisma/dev.db
