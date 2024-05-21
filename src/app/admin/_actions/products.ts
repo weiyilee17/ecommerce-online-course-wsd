@@ -14,7 +14,8 @@ const imageSchema = fileSchema.refine((file) => file.size === 0 || file.type.sta
 const addSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
-  priceInCents: z.coerce.number().int().min(1),
+  // Stripe only works for prices larger than 0.50 USD
+  priceInCents: z.coerce.number().int().min(50),
   // Preventing
   file: fileSchema.refine((file) => file.size > 0, 'Required'),
   image: imageSchema.refine((file) => file.size > 0, 'Required'),
