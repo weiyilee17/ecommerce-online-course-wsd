@@ -1,10 +1,14 @@
 import { formatCurrency, formatDate } from '@/lib/formatters';
-
+import { Order, Product } from '@prisma/client';
 import { Button, Column, Img, Row, Section, Text } from '@react-email/components';
 
-import { PurchaseReceiptEmailProps } from '../purchase-receipt';
+type OrderInformationProps = {
+  order: Pick<Order, 'id' | 'createdAt' | 'pricePaidInCents'>;
+  product: Pick<Product, 'name' | 'imagePath' | 'description'>;
+  downloadVerificationId: string;
+};
 
-function OrderInformation({ order, product, downloadVerificationId }: PurchaseReceiptEmailProps) {
+function OrderInformation({ order, product, downloadVerificationId }: OrderInformationProps) {
   return (
     <>
       <Section>
@@ -19,7 +23,7 @@ function OrderInformation({ order, product, downloadVerificationId }: PurchaseRe
           </Column>
           <Column>
             <Text className='mb-0 text-gray-500 whitespace-nowrap text-nowrap mr-4'>Price Paid</Text>
-            <Text className='mt-0 mr-4'>{formatCurrency(order.pricePaidInCents)}</Text>
+            <Text className='mt-0 mr-4'>{formatCurrency(order.pricePaidInCents / 100)}</Text>
           </Column>
         </Row>
       </Section>
