@@ -11,6 +11,7 @@ function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
         <NavLink href='/admin/products'>Products</NavLink>
         <NavLink href='/admin/users'>Customers</NavLink>
         <NavLink href='/admin/orders'>Sales</NavLink>
+        <NavLink href='/admin/discount-codes'>Coupons</NavLink>
       </Nav>
       <div className='container my-6'>{children}</div>
     </div>

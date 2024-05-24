@@ -19,7 +19,7 @@ function AdminProductsPage() {
   return (
     <>
       <div className='flex justify-between items-center gap-4'>
-        <PageHeader>AdminProductsPage</PageHeader>
+        <PageHeader>Products</PageHeader>
         {/* renders as link rather than as button */}
         <Button asChild>
           <Link href='/admin/products/new'>Add Product</Link>
