@@ -1,4 +1,4 @@
-import { MoreVertical } from 'lucide-react';
+import { Minus, MoreVertical } from 'lucide-react';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,6 +17,7 @@ function getOrders() {
         select: { name: true },
       },
       user: { select: { email: true } },
+      discountCode: { select: { code: true } },
     },
     orderBy: {
       createdAt: 'desc',
@@ -47,6 +48,7 @@ async function OrdersTable() {
           <TableHead>Product</TableHead>
           <TableHead>Customer</TableHead>
           <TableHead>Price Paid</TableHead>
+          <TableHead>Coupon</TableHead>
           <TableHead className='w-0'>
             <span className='sr-only'>Actions</span>
           </TableHead>
@@ -54,11 +56,12 @@ async function OrdersTable() {
       </TableHeader>
 
       <TableBody>
-        {orders.map(({ id, product, user, pricePaidInCents }) => (
+        {orders.map(({ id, product, user, pricePaidInCents, discountCode }) => (
           <TableRow key={id}>
             <TableCell>{product.name}</TableCell>
             <TableCell>{user.email}</TableCell>
             <TableCell>{formatCurrency(pricePaidInCents / 100)}</TableCell>
+            <TableCell>{!discountCode ? <Minus /> : discountCode.code}</TableCell>
             <TableCell className='text-center'>
               <DropdownMenu>
                 <DropdownMenuTrigger>

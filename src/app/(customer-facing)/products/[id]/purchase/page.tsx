@@ -5,10 +5,17 @@ import Stripe from 'stripe';
 import db from '@/db/db';
 
 import CheckoutForm from './_components/checkout-form';
+import { usableDiscountCodeWhere } from '@/lib/discount-code-helpers';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
-async function PurchasePage({ params: { id } }: { params: { id: string } }) {
+async function PurchasePage({
+  params: { id },
+  searchParams: { coupon },
+}: {
+  params: { id: string };
+  searchParams: { coupon?: string };
+}) {
   const product = await db.product.findUnique({
     where: { id },
   });
@@ -16,6 +23,8 @@ async function PurchasePage({ params: { id } }: { params: { id: string } }) {
   if (!product) {
     return notFound();
   }
+
+  const discountCode = !coupon ? undefined : await getDiscountCode(coupon, product.id);
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: product.priceInCents,
@@ -33,9 +42,24 @@ async function PurchasePage({ params: { id } }: { params: { id: string } }) {
   return (
     <CheckoutForm
       product={product}
+      discountCode={discountCode}
       clientSecret={paymentIntent.client_secret}
     />
   );
+}
+
+export function getDiscountCode(coupon: string, productId: string) {
+  return db.discountCode.findUnique({
+    where: {
+      ...usableDiscountCodeWhere,
+      code: coupon,
+    },
+    select: {
+      id: true,
+      discountAmount: true,
+      discountType: true,
+    },
+  });
 }
 
 export default PurchasePage;
