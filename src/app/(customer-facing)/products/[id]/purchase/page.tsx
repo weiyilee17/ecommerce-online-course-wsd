@@ -1,13 +1,10 @@
 import { notFound } from 'next/navigation';
 import React from 'react';
-import Stripe from 'stripe';
 
 import db from '@/db/db';
-
-import CheckoutForm from './_components/checkout-form';
 import { usableDiscountCodeWhere } from '@/lib/discount-code-helpers';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+import CheckoutForm from './_components/checkout-form';
 
 async function PurchasePage({
   params: { id },
@@ -26,24 +23,10 @@ async function PurchasePage({
 
   const discountCode = !coupon ? undefined : await getDiscountCode(coupon, product.id);
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: product.priceInCents,
-    currency: 'USD',
-    // Tie up payment intent with product
-    metadata: {
-      productId: product.id,
-    },
-  });
-
-  if (!paymentIntent.client_secret) {
-    throw Error('Strip failed to create payment intent.');
-  }
-
   return (
     <CheckoutForm
       product={product}
       discountCode={discountCode}
-      clientSecret={paymentIntent.client_secret}
     />
   );
 }

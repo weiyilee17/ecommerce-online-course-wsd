@@ -1,30 +1,30 @@
 'use client';
 
 import Image from 'next/image';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, useRef, useState } from 'react';
 
-import { userOrderExists } from '@/app/actions/order';
+import { createPaymentIntent } from '@/actions/orders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { getDiscountedAmount } from '@/lib/discount-code-helpers';
 import { formatCurrency, formatDiscountCode } from '@/lib/formatters';
 import { Product } from '@prisma/client';
 import { Elements, LinkAuthenticationElement, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
 import { getDiscountCode } from '../page';
-import { getDiscountedAmount } from '@/lib/discount-code-helpers';
 
 type CheckoutFormProps = {
   product: Product;
   discountCode?: Awaited<ReturnType<typeof getDiscountCode>>;
-  clientSecret: string;
 };
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY as string);
 
-function CheckoutForm({ clientSecret, product, discountCode }: CheckoutFormProps) {
+function CheckoutForm({ product, discountCode }: CheckoutFormProps) {
   const amount = !discountCode
     ? product.priceInCents
     : getDiscountedAmount(discountCode?.discountAmount, discountCode?.discountType, product.priceInCents);
@@ -54,11 +54,11 @@ function CheckoutForm({ clientSecret, product, discountCode }: CheckoutFormProps
         </div>
       </div>
       <Elements
-        options={{ clientSecret }}
+        options={{ amount, mode: 'payment', currency: 'usd' }}
         stripe={stripePromise}
       >
         <Form
-          priceInCents={product.priceInCents}
+          priceInCents={amount}
           id={product.id}
           discountCode={discountCode}
         />
@@ -95,11 +95,18 @@ function Form({
 
     setIsLoading(true);
 
-    // Check if existing order
-    const orderExists = await userOrderExists(email, productId);
+    const formSubmit = await elements.submit();
 
-    if (orderExists) {
-      setErrorMessage('You have already purchased this product. Try downloading it from the My Orders page.');
+    if (formSubmit.error) {
+      setErrorMessage(formSubmit.error.message);
+      setIsLoading(false);
+      return;
+    }
+
+    const paymentIntent = await createPaymentIntent(email, productId, discountCode?.id);
+
+    if (paymentIntent.error !== undefined) {
+      setErrorMessage(paymentIntent.error);
       setIsLoading(false);
       return;
     }
@@ -107,6 +114,7 @@ function Form({
     stripe
       .confirmPayment({
         elements,
+        clientSecret: paymentIntent.clientSecret,
         confirmParams: {
           return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/stripe/purchase-success`,
         },

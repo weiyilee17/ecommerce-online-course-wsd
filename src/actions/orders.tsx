@@ -1,13 +1,16 @@
 'use server';
 
 import { Resend } from 'resend';
+import Stripe from 'stripe';
 import { z } from 'zod';
 
 import db from '@/db/db';
 import OrderHistoryEmail from '@/email/order-history';
+import { getDiscountedAmount, usableDiscountCodeWhere } from '@/lib/discount-code-helpers';
 
 const emailSchema = z.string().email();
 const resend = new Resend(process.env.RESEND_API_KEY as string);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export async function emailOrderHistory(
   prevState: unknown,
@@ -74,5 +77,72 @@ export async function emailOrderHistory(
 
   return {
     message: 'Check your email to view your order history and download your products.',
+  };
+}
+
+export async function createPaymentIntent(email: string, productId: string, discountCodeId?: string) {
+  const product = await db.product.findUnique({
+    where: {
+      id: productId,
+    },
+  });
+
+  if (!product) {
+    return {
+      error: 'Unexpected Error',
+    };
+  }
+
+  const discountCode = !discountCodeId
+    ? null
+    : await db.discountCode.findUnique({
+        where: {
+          id: discountCodeId,
+          ...usableDiscountCodeWhere(product.id),
+        },
+      });
+
+  if (!discountCode && discountCodeId) {
+    return {
+      error: 'Coupon has expired',
+    };
+  }
+
+  const existingOrder = await db.order.findFirst({
+    where: {
+      user: {
+        email,
+      },
+      productId,
+    },
+    select: { id: true },
+  });
+
+  if (existingOrder) {
+    return { error: 'You have already purchased this product. Try downloading it from the My Orders page.' };
+  }
+
+  const amount = !discountCode
+    ? product.priceInCents
+    : getDiscountedAmount(discountCode.discountAmount, discountCode.discountType, product.priceInCents);
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount,
+    currency: 'USD',
+    // Tie up payment intent with product
+    metadata: {
+      productId: product.id,
+      discountCodeId: discountCode?.id ?? null,
+    },
+  });
+
+  if (!paymentIntent.client_secret) {
+    return {
+      error: 'Unknown error',
+    };
+  }
+
+  return {
+    clientSecret: paymentIntent.client_secret,
   };
 }
